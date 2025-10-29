@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💕lilith and kingers site💕</title>
+<style>
+    body {
+        background-color: #ffe6f2;
+        font-family: 'Poppins', sans-serif;
+        color: #ff4da6;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+    }
+
+    h1 { font-size: 2.5em; margin-top: 40px; }
+
+    .counter-box {
+        background-color: #fff0f5;
+        border: 2px solid #ffb6c1;
+        border-radius: 20px;
+        display: inline-block;
+        padding: 20px 40px;
+        margin-top: 20px;
+        box-shadow: 0 0 10px #ffb6c1;
+    }
+
+    #days { font-size: 3em; font-weight: bold; }
+
+    .chatbox {
+        background-color: #fff0f5;
+        border: 2px solid #ffb6c1;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 20px;
+        box-shadow: 0 0 10px #ffb6c1;
+    }
+
+    #chat-messages {
+        height: 250px;
+        overflow-y: auto;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 10px;
+        border: 1px solid #ffcce0;
+        text-align: left;
+    }
+
+    .message {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 12px;
+        margin: 6px 0;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    .you { background: #ffe0eb; color: #ff1a75; }
+    .partner { background: #e0f7ff; color: #ff68c5; }
+
+    #chat-input, #passcode-input {
+        width: 70%;
+        padding: 8px;
+        border: 1px solid #ffb6c1;
+        border-radius: 10px;
+        outline: none;
+        margin-top: 10px;
+    }
+    #send-btn, #login-btn {
+        background-color: #ff66b2;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-left: 5px;
+    }
+    #send-btn:hover, #login-btn:hover { background-color: #ff4da6; }
+
+    .login-box { margin-top: 20px; }
+    .name-label { font-weight: bold; color: #ff4da6; margin-bottom: 5px; }
+
+    .notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ffb6c1;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 15px;
+        box-shadow: 0 0 10px #ff66b2;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(20px);
+    }
+    .notification.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<h1>💞our love timer💞</h1>
+<div class="counter-box">
+    <p>how many days has it been?</p>
+    <div id="days">0</div>
+    <p>days since our love became official</p>
+</div>
+
+<div class="chatbox">
+    <h2>💬 send a message</h2>
+    <div class="login-box">
+        <div class="name-label">enter your UID!</div>
+        <input type="password" id="passcode-input" placeholder="Enter UID">
+        <button id="login-btn">Login</button>
+        <p id="user-label"></p>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <div>
+        <input type="text" id="chat-input" placeholder="Type a message..." disabled>
+        <button id="send-btn" disabled>Send</button>
+    </div>
+</div>
+
+<div id="notification" class="notification"></div>
+<audio id="notify-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_284b7071c7.mp3?filename=soft-notification-171698.mp3" preload="auto"></audio>
+
+<script>
+const SERVER_URL = "https://your-server-url.com"; // ← replace this with your own server
+
+// 💕 Start date
+const startDate = new Date("2025-07-19");
+function updateDays() {
+  const today = new Date();
+  const timeDiff = today - startDate;
+  const daysSince = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+  document.getElementById("days").textContent = daysSince;
+}
+updateDays();
+
+// 💌 Passcodes
+const users = {
+  "pinkheart": { name: "lilith 💖", role: "lili" },
+  "purpheart": { name: "kinger 💜", role: "kk" }
+};
+
+let currentUser = null;
+const passInput = document.getElementById("passcode-input");
+const loginBtn = document.getElementById("login-btn");
+const chatInput = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
+const userLabel = document.getElementById("user-label");
+const chatMessages = document.getElementById("chat-messages");
+const notifyBox = document.getElementById("notification");
+const notifySound = document.getElementById("notify-sound");
+
+let messages = [];
+
+function showNotification(text) {
+  notifyBox.textContent = text;
+  notifyBox.classList.add("show");
+  notifySound.play().catch(() => {});
+  setTimeout(() => notifyBox.classList.remove("show"), 3000);
+}
+
+function renderMessages() {
+  chatMessages.innerHTML = "";
+  messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.classList.add("message", msg.role);
+    div.textContent = `${msg.name}: ${msg.text}`;
+    chatMessages.appendChild(div);
+  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Fetch existing messages
+async function fetchMessages() {
+  try {
+    const res = await fetch(`${SERVER_URL}/messages`);
+    messages = await res.json();
+    renderMessages();
+  } catch (e) {
+    console.error("whoops! that wasn't right. wanna try again?", e);
+  }
+}
+
+// Send message to server
+async function sendMessage(msg) {
+  try {
+    await fetch(`${SERVER_URL}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(msg)
+    });
+  } catch (e) {
+    console.error("ouch! that sucks. wanna try again?", e);
+  }
+}
+
+// Real-time WebSocket
+let socket;
+function connectSocket() {
+  socket = new WebSocket(SERVER_URL.replace("http", "ws"));
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "new-message") {
+      messages.push(data.message);
+      renderMessages();
+      showNotification(`${data.message.name} sent a love letter! 💌`);
+    }
+  };
+  socket.onopen = () => console.log("Connected to server");
+  socket.onerror = err => console.error("Socket error:", err);
+  socket.onclose = () => setTimeout(connectSocket, 3000); // retry
+}
+connectSocket();
+fetchMessages();
+
+// Login and send logic
+loginBtn.addEventListener("click", () => {
+  const code = passInput.value.trim();
+  if (users[code]) {
+    currentUser = users[code];
+    userLabel.textContent = `Logged in as ${currentUser.name}`;
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
+    passInput.value = "";
+    showNotification(`Welcome ${currentUser.name}! 💕`);
+  } else {
+    alert("aw, shit! that was.. wrong. wanna try again?💔");
+  }
+});
+
+sendBtn.addEventListener("click", () => {
+  const text = chatInput.value.trim();
+  if (text && currentUser) {
+    const newMessage = { name: currentUser.name, role: currentUser.role, text };
+    sendMessage(newMessage);
+    chatInput.value = "";
+  }
+});
+chatInput.addEventListener("keypress", e => { if (e.key === "Enter") sendBtn.click(); });
+</script>
+</body>
+</html>
